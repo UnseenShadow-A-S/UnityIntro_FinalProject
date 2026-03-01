@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
@@ -21,7 +22,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform groundCheckPosition;
 
     [SerializeField] private float wallDistanceCheck = 0.3f;
-    [SerializeField] private Transform wallCheckPosition; 
+    [SerializeField] private Transform wallCheckPosition;
+
+    [SerializeField] private float wallJumpLockTime = 0.15f;
+    private float wallJumpLockCounter;
     
     private Vector2 groundRayOrigin;
     private Vector2 wallRayOriginRight;
@@ -40,7 +44,7 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         jumpForce = 10;
-        wallPush = 500;
+        wallPush = 10;
         playerPosition = transform.position;
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
@@ -55,9 +59,14 @@ public class PlayerMovement : MonoBehaviour
     {
         playerPosition = transform.position;
         move = Input.GetAxisRaw("Horizontal");
-        rb.linearVelocity = new Vector2(move * speed, rb.linearVelocity.y);
+        if (wallJumpLockCounter > 0)
+            wallJumpLockCounter -= Time.deltaTime;
+        
+        if (!wallSliding && wallJumpLockCounter <= 0)
+            rb.velocity = new Vector2(move * speed, rb.velocity.y);
         
         Bounds bounds = col.bounds;
+
         
         //Ground Ray (starting from the bottom/Min(Y-Axis), center(X-Axis))
         groundRayOrigin = new Vector2(bounds.center.x, bounds.min.y);
@@ -71,36 +80,50 @@ public class PlayerMovement : MonoBehaviour
         wallRayOriginLeft = new Vector2(bounds.min.x, bounds.center.y);
         Debug.DrawRay(wallRayOriginLeft, Vector2.left * wallDistanceCheck, Color.blue);
 
-        // isGrounded = Physics2D.Raycast(
-        //     groundCheckPosition.position, // Raycast origin
-        //     Vector2.down, // Raycast direction
-        //     groundDistance, // Raycast distance
-        //     groundLayer); // LayerMask (to check for specific layer
-        // Debug.DrawRay(groundCheckPosition.position,
-        //     Vector2.down * groundDistance,
-        //     isGrounded ? Color.green : Color.red
-        //     );
-        //
-        // isWallTouchingRight = Physics2D.Raycast(
-        //     transform.position,
-        //     Vector2.right,
-        //     wallDistanceCheck,
-        //     wallLayer); 
-        //
-        // // Debug.DrawRay(wallCheckPosition.position,
-        // //     Vector2.right * wallDistanceCheck,
-        // //     isWallTouchingRight ? Color.green : Color.red
-        // //     );
-        //
-        // isWallTouchingLeft = Physics2D.Raycast(
-        //     transform.position,
-        //     Vector2.left,
-        //     wallDistanceCheck,
-        //     wallLayer);
-        // // Debug.DrawRay(wallCheckPosition.position,
-        // //     Vector2.left * wallDistanceCheck,
-        // //     isWallTouchingLeft ? Color.green : Color.red
-        // //     );
+        // ground collision check
+        isGrounded = Physics2D.Raycast(groundRayOrigin,
+            Vector2.down,
+            groundDistance,
+            groundLayer);
+        
+        //debug for ground collision check
+        Debug.DrawRay(groundRayOrigin,
+            Vector2.down * groundDistance,
+            isGrounded ? Color.green : Color.red);
+        
+        //wall collision check on the right wall
+        isWallTouchingRight = Physics2D.Raycast(wallRayOriginRight,
+            Vector2.right,
+            wallDistanceCheck,
+            wallLayer);
+        
+        //debug for right-wall collision check
+        Debug.DrawRay(wallRayOriginRight,
+            Vector2.right * wallDistanceCheck,
+            isWallTouchingRight ? Color.green : Color.red);
+        
+        //determine jump direction from right-wall
+        if (isWallTouchingRight)
+        {
+            jumpDirection = -1; //the player will jump to the left
+        }
+        
+        //wall collision check on the left wall
+        isWallTouchingLeft = Physics2D.Raycast(wallRayOriginLeft,
+            Vector2.left,
+            wallDistanceCheck,
+            wallLayer);
+        
+        //Debug for left-wall collision check
+        Debug.DrawRay(wallRayOriginLeft,
+            Vector2.left * wallDistanceCheck,
+            isWallTouchingLeft ? Color.green : Color.red);
+        
+        //determine jump direction from the left-wall
+        if (isWallTouchingLeft)
+        {
+            jumpDirection = 1; //the player will jump to the right
+        }
 
         isWallTouching = isWallTouchingLeft || isWallTouchingRight;
         wallSliding = isWallTouching && !isGrounded;
@@ -113,19 +136,35 @@ public class PlayerMovement : MonoBehaviour
         {
             WallJump();
         }
+        HandleWallSliding();
     }
 
     void GroundJump()
     {
-        rb.AddForce(new Vector2(rb.linearVelocity.x, jump * jumpForce));
+        rb.AddForce(new Vector2(rb.velocity.x, jump * jumpForce));
     }
 
     void WallJump()
     {
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
-        rb.AddForce(new Vector2(wallPush * jumpDirection * 10, rb.linearVelocity.y));
-        rb.AddForce(new Vector2(rb.linearVelocity.x, jump * jumpForce));
+        //reset the player's velocity at the beginning for consistent jumps
+        rb.velocity = Vector2.zero;
 
+        Vector2 force = new Vector2(
+            wallPush * jumpDirection, //determining the direction and distance the player will push away from the wall
+            jump * jumpForce); 
+        
+        rb.AddForce(force, ForceMode2D.Impulse);
+        
+        wallJumpLockCounter = wallJumpLockTime;
+    }
+
+    void HandleWallSliding()
+    {
+        if (!wallSliding)
+            return;
+        
+        rb.velocity = new Vector2(rb.velocity.x,
+            Math.Clamp(rb.velocity.y, -2f, jumpForce));
     }
     
 //     void OnCollisionEnter2D(Collision2D other)
