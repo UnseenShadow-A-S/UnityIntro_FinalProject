@@ -1,12 +1,5 @@
 fileFormatVersion: 2
-guid: b6b674b819a9a41e8a18504fdd8f87fb
-AssetOrigin:
-  serializedVersion: 1
-  productId: 22006
-  packageName: Tileable 2d Terrain Platforms - 2D RPK
-  packageVersion: 1.0
-  assetPath: Assets/2DRPK/Sprites/terrain-ground.png
-  uploadId: 22478
+guid: 94357561458890641b299c16c0a90f82
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -52,15 +45,15 @@ TextureImporter:
   compressionQuality: 50
   spriteMode: 1
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 32
-  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteBorder: {x: 4, y: 4, z: 16, w: 68}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
-  spriteTessellationDetail: 0
+  spriteTessellationDetail: -1
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
@@ -116,11 +109,7 @@ TextureImporter:
   spriteSheet:
     serializedVersion: 2
     sprites: []
-    outline:
-    - - {x: 128, y: 0}
-      - {x: -128, y: -1}
-      - {x: -128, y: -64}
-      - {x: 128, y: -64}
+    outline: []
     customData: 
     physicsShape: []
     bones: []

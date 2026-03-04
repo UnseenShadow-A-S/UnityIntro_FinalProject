@@ -36,14 +36,16 @@ public class PlayerMovement : MonoBehaviour
     private bool isWallTouchingRight;
     private bool isWallTouchingLeft;
     
+    bool isPressingTowardsAWall;
     bool wallSliding; 
     float jumpForce;
+    float jumpStrength;
 
     private Vector3 playerPosition = new Vector3();
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        jumpForce = 10;
+        jumpStrength = 8f;
         wallPush = 10;
         playerPosition = transform.position;
         rb = GetComponent<Rigidbody2D>();
@@ -63,7 +65,7 @@ public class PlayerMovement : MonoBehaviour
             wallJumpLockCounter -= Time.deltaTime;
         
         if (!wallSliding && wallJumpLockCounter <= 0)
-            rb.velocity = new Vector2(move * speed, rb.velocity.y);
+            rb.linearVelocity = new Vector2(move * speed, rb.linearVelocity.y);
         
         Bounds bounds = col.bounds;
 
@@ -126,36 +128,64 @@ public class PlayerMovement : MonoBehaviour
         }
 
         isWallTouching = isWallTouchingLeft || isWallTouchingRight;
-        wallSliding = isWallTouching && !isGrounded;
-            
+        if (isWallTouching && !isGrounded && isPressingTowardsAWall)
+        {
+            wallSliding = true;
+        }
+        else
+        {
+            wallSliding = false;
+        }
+        
+        isPressingTowardsAWall = (isWallTouchingLeft && move < 0) || (isWallTouchingRight && move > 0);
+        
+       // Debug.Log($"player is touching the wall ${isWallTouching}");
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
             GroundJump();
         }
-        if (Input.GetButtonDown("Jump") && wallSliding)
+        if (Input.GetButtonDown("Jump") && isWallTouching && !isGrounded)
         {
             WallJump();
         }
-        HandleWallSliding();
+
+        if (wallSliding)
+        {
+            HandleWallSliding();
+        }
     }
 
     void GroundJump()
     {
-        rb.AddForce(new Vector2(rb.velocity.x, jump * jumpForce));
+        //physics based jump momentum
+        // Vector2 groundForce = new Vector2(rb.linearVelocity.x, jump * jumpForce);
+        //
+        // rb.AddForce(groundForce, ForceMode2D.Impulse);
+        
+        //Velocity based jump momentum
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpStrength);
+        
+        //Debug.Log($"Force added from Ground - X-axis ({rb.linearVelocity.x}), Y-axis ({jumpStrength})");
     }
 
     void WallJump()
     {
         //reset the player's velocity at the beginning for consistent jumps
-        rb.velocity = Vector2.zero;
+        rb.linearVelocity = Vector2.zero;
 
-        Vector2 force = new Vector2(
-            wallPush * jumpDirection, //determining the direction and distance the player will push away from the wall
-            jump * jumpForce); 
+        //physics based jump momentum
+        // Vector2 force = new Vector2(
+        //     wallPush * jumpDirection, //determining the direction and distance the player will push away from the wall
+        //     jump * jumpForce); 
+        //
+        // rb.AddForce(force, ForceMode2D.Impulse);
         
-        rb.AddForce(force, ForceMode2D.Impulse);
+        //Velocity based jump momentum
+        rb.linearVelocity = new Vector2(wallPush * jumpDirection, jumpStrength);
         
         wallJumpLockCounter = wallJumpLockTime;
+        
+        //Debug.Log($"Force added from wall - X-axis ({wallPush * jumpDirection}), Y-axis ({jumpStrength})");
     }
 
     void HandleWallSliding()
@@ -163,8 +193,8 @@ public class PlayerMovement : MonoBehaviour
         if (!wallSliding)
             return;
         
-        rb.velocity = new Vector2(rb.velocity.x,
-            Math.Clamp(rb.velocity.y, -2f, jumpForce));
+        rb.linearVelocity = new Vector2(rb.linearVelocity.x,
+            Math.Clamp(rb.linearVelocity.y, -2f, jumpStrength));
     }
     
 //     void OnCollisionEnter2D(Collision2D other)
