@@ -7,6 +7,8 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody2D rb;
 
     private Collider2D col;
+    
+    private Animator anim;
 
     private float move;
 
@@ -14,6 +16,8 @@ public class PlayerMovement : MonoBehaviour
     public float jump;
     public float wallPush;
     public int jumpDirection;
+
+    private SpriteRenderer sprite;
 
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private LayerMask wallLayer; 
@@ -45,6 +49,8 @@ public class PlayerMovement : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        anim = GetComponent<Animator>();
+        sprite = GetComponent<SpriteRenderer>();
         jumpStrength = 8f;
         wallPush = 10;
         playerPosition = transform.position;
@@ -61,6 +67,38 @@ public class PlayerMovement : MonoBehaviour
     {
         playerPosition = transform.position;
         move = Input.GetAxisRaw("Horizontal");
+        
+        //Animation triggers and such 
+        if (move != 0)
+        {
+            anim.SetBool("IsIdle", false);
+            anim.SetBool("IsWalking", true);
+        }
+        else if (move == 0 && isGrounded)
+        {
+            anim.SetBool("IsWalking", false);
+            anim.SetBool("IsIdle", true);
+        }
+
+        if (!isGrounded)
+        {
+            anim.SetBool("IsIdle", false);
+            anim.SetBool("IsInTheAir", true);
+        }
+        else
+        {
+            anim.SetBool("IsInTheAir", false);
+        }
+        
+        
+        if (move < 0)
+        {
+            sprite.flipX = true;
+        }
+        else if (move > 0)
+        {
+            sprite.flipX = false;
+        }
         if (wallJumpLockCounter > 0)
             wallJumpLockCounter -= Time.deltaTime;
         
@@ -157,35 +195,21 @@ public class PlayerMovement : MonoBehaviour
 
     void GroundJump()
     {
-        //physics based jump momentum
-        // Vector2 groundForce = new Vector2(rb.linearVelocity.x, jump * jumpForce);
-        //
-        // rb.AddForce(groundForce, ForceMode2D.Impulse);
-        
         //Velocity based jump momentum
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpStrength);
         
-        //Debug.Log($"Force added from Ground - X-axis ({rb.linearVelocity.x}), Y-axis ({jumpStrength})");
     }
 
     void WallJump()
     {
         //reset the player's velocity at the beginning for consistent jumps
         rb.linearVelocity = Vector2.zero;
-
-        //physics based jump momentum
-        // Vector2 force = new Vector2(
-        //     wallPush * jumpDirection, //determining the direction and distance the player will push away from the wall
-        //     jump * jumpForce); 
-        //
-        // rb.AddForce(force, ForceMode2D.Impulse);
         
         //Velocity based jump momentum
         rb.linearVelocity = new Vector2(wallPush * jumpDirection, jumpStrength);
         
         wallJumpLockCounter = wallJumpLockTime;
         
-        //Debug.Log($"Force added from wall - X-axis ({wallPush * jumpDirection}), Y-axis ({jumpStrength})");
     }
 
     void HandleWallSliding()
@@ -197,48 +221,4 @@ public class PlayerMovement : MonoBehaviour
             Math.Clamp(rb.linearVelocity.y, -2f, jumpStrength));
     }
     
-//     void OnCollisionEnter2D(Collision2D other)
-//     {
-//         if (other.gameObject.tag == "Ground")
-//         {
-//             grounded = true;
-//             Debug.Log("Player is Grounded");
-//         }
-//         else if (other.gameObject.tag == "Wall")
-//         {
-//             wallSliding = true;
-//             Debug.Log("Player is sliding against the wall");
-//         }
-//     }
-//
-//     void OnCollisionStay2D(Collision2D other)
-//     {
-//         if (other.gameObject.tag == "Wall")
-//         {
-//             Vector2 wallDirection = other.GetContact(0).normal;
-//
-//             if (wallDirection.x > 0) // wall on the left
-//             {
-//                 jumpDirection = 1;
-//             }
-//             else if (wallDirection.x < 0)
-//             {
-//                 jumpDirection = -1;
-//             }
-//         }
-//     }
-//
-//     void OnCollisionExit2D(Collision2D other)
-//     {
-//         if (other.gameObject.tag == "Ground")
-//         {
-//             grounded = false;
-//             Debug.Log("Player has jumped");
-//         }
-//         else if (other.gameObject.tag == "Wall")
-//         {
-//             wallSliding = false;
-//             Debug.Log("Player has left the wall");
-//         }
-//     }
 }
