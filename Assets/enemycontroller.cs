@@ -3,8 +3,8 @@ using UnityEngine;
 public class SlimeEnemy : MonoBehaviour
 {
     public float moveSpeed = 2f;
-    public float jumpForce = 5f;
-    public float jumpInterval = 1.5f;
+    public float jumpForce = 10f;
+    public float jumpInterval = 3f;
     public float reactionForce = 3f;
 
     private Rigidbody2D rb;
